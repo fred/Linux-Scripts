@@ -1,0 +1,12 @@
+h1. Collection of Linux Scripts for firewall, security, alerts, crons, monitoring and etc... 
+
+h2. check_syn_flood.rb 
+
+p. Will check if there are more than 40 SYN_REC TCP streams from the same IP. 
+
+p. Then it will block with iptables, inserting at top of chain the offending IP. such as: 
+
+  /sbin/iptables -I INPUT -s 123.1.1.1 -j DROP
+
+p. Works on Linux and OSX
+  

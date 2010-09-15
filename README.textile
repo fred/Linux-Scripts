@@ -1,6 +1,6 @@
-h1. Collection of Linux Scripts for firewall, security, alerts, crons, monitoring and etc... 
+h1. Collection of Linux Scripts for firewall, security, alerts, monitoring, etc... 
 
-h2. check_syn_flood.rb 
+h2. 1. check_syn_flood.rb 
 
 p. Will check if there are more than 40 SYN_REC TCP streams from the same IP. 
 

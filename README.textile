@@ -9,4 +9,3 @@ p. Then it will block with iptables, inserting at top of chain the offending IP.
   /sbin/iptables -I INPUT -s 123.1.1.1 -j DROP
 
 p. Works on Linux and OSX
-  

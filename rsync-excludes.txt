@@ -1,0 +1,14 @@
+/proc/*
+/sys/*
+/tmp/*
+/var/tmp/*
+/etc/shadow
+/var/log/*
+/mnt/*
+/root/*
+/var/lib/mysql/fulldump.sql
+/home/*
+/backup/*
+/usr/portage/*
+/var/cache/*
+/usr/share/*

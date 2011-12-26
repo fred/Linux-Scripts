@@ -91,6 +91,9 @@ else
   @db_password = "mysql-password"
 end
 
+# HOST for mysql
+@mysql_host = "localhost"
+
 @lines = "\n----------------------------------------------------------"
 
 if @unattended_mode == false
@@ -225,7 +228,7 @@ def mysqldump(options)
     end
     file_name = "#{@data_dir}/#{append_name}#{name}_#{@filename}.sql"
     puts "Dumping #{options[:name]} into #{file_name}\n"
-    command = " nice -n #{@nice} mysqldump -u #{@db_username} #{db_password} #{dump_options} #{@extra_dump_options} #{name} > #{file_name}"
+    command = " nice -n #{@nice} mysqldump -h #{@mysql_host} -u #{@db_username} #{db_password} #{dump_options} #{@extra_dump_options} #{name} > #{file_name}"
     puts "EXECUTING:\n  #{command}"
     system(command)
     return file_name

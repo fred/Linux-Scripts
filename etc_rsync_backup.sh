@@ -29,7 +29,7 @@ WEEK_DAY=`${DATE} "+%w"`
 # ------------- file locations -----------------------------------------
 
 SOURCE="/etc"
-DESTINATION_FOLDER="/backup/local/etc"
+DESTINATION_FOLDER="/backup/etc"
 EXCLUDES=/root/Scripts/etc_excludes.txt 
 
 

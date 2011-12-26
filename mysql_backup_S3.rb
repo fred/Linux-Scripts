@@ -5,14 +5,19 @@
 #### Free to use as in free beer  #####
 #######################################
 
+if RUBY_VERSION.match("^1.8")
+  require "rubygems"
+  require 'ftools'
+  require 'pathname'
+end
 
-require 'rubygems'
+if RUBY_VERSION.match("^1.9")
+  require 'pathname'
+  require 'fileutils'
+end
+
 require 'aws/s3'
-require 'fastthread'
-require 'pathname'
-require 'ftools'
-require "fileutils"
-
+require 'syslog'
 
 #########################
 ##   SCRIPT SETTINGS   ##
@@ -20,7 +25,7 @@ require "fileutils"
 
 # Encryption
 @rsa_encryption = true
-@rsa_password = "xxxxxxxxxxxxxxxxxxxxxxx"
+@rsa_password = "very_long_string_to_encrypt_backups"
 
 @unattended_mode = true
 @access_key_id = "xxxxxxxxxxxxxxxxxxxx"
@@ -29,6 +34,7 @@ require "fileutils"
 @home = "/backup/local"
 
 @time = Time.now
+@syslog_tag = "mysql_backup_S3"
 
 # nice value: -19 to 19
 # default 0
@@ -36,7 +42,7 @@ require "fileutils"
 
 # lzma compression rates: 1-2 (fast) 3-9 (slow)
 # default 7, 2=10 second, 3=50 seconds
-@lzma_compress_rate = 2
+@lzma_compress_rate = 4
 
 @hostname = `hostname`.chomp
 
@@ -50,14 +56,24 @@ require "fileutils"
 @filename = "#{@time.strftime("%Y%m%d__%H%M%S")}"
 @bucket_folder = "#{@time.strftime("%Y")}/#{@time.strftime("%m")}/"
 
+@log_file = "#{@home}/mysql/backup.log"
+
 # set to true if you want to keep backups on the hard drive. 
 @keep_backups = true
 
 # Array of databases to backup 
 @databases = [
-  {:name => "db2", :dump_options => "", :appenmd_name => ""},
-  {:name => "db1", :dump_options => "", :appenmd_name => ""},
-  {:name => "mysql", :dump_options => "", :appenmd_name => ""}
+  {:name => "mysql", :dump_options => "", :append_name => ""},
+  #{:name => "fred_spree", :dump_options => "--single-transaction", :append_name => ""},
+  #{:name => "redmine", :dump_options => "--single-transaction", :append_name => ""},
+  #{:name => "serenity_spree", :dump_options => "--single-transaction", :append_name => ""},
+  #{:name => "mingood_production", :dump_options => "--single-transaction", :append_name => ""},
+  #{:name => "redmine", :dump_options => "--single-transaction", :append_name => ""},
+  #{:name => "feedscollect", :dump_options => "--single-transaction", :append_name => ""},
+  #{:name => "casablanca", :dump_options => "--single-transaction", :append_name => ""},
+  {:name => "iglesia", :dump_options => "--single-transaction", :append_name => ""},
+  {:name => "bangkok_properties_production", :dump_options => "--single-transaction", :append_name => ""},
+  {:name => "realestate_production", :dump_options => "", :append_name => ""}
 ]
 
 # Also make a single backup of all databases. 
@@ -79,7 +95,7 @@ end
 if ENV['DB_PASSWORD']
   @db_password = ENV['DB_PASSWORD']
 else
-  @db_password = "xxxxxx"
+  @db_password = "mysql-password"
 end
 
 @lines = "\n----------------------------------------------------------"
@@ -101,6 +117,14 @@ if @unattended_mode == false
   puts @lines
   puts "Is this Information correct? will continue in 5 seconds"
 end
+
+
+def to_syslog(tag,string)
+  Syslog.open(tag)
+  Syslog.info(string)
+  Syslog.close
+end
+
 
 def to_file_size(num)
   case num
@@ -159,6 +183,24 @@ def email_on_error(error_msg)
   command = "echo \"#{@body}\" | sendEmail -f \"#{@email_from}\" -u \"#{@subject}\" -t \"#{@send_to}\" -q"  
 end
 
+def check_programs
+
+  if `which lzma`.empty?
+    puts "LZMA not found or not installed. Exiting"
+    exit
+  end
+
+  if no_openssl = `which openssl`.empty?
+    puts "OpenSSL not found or not installed. Exiting"
+    exit
+  end
+
+  if no_mysqldump = `which mysqldump`.empty?
+    puts "mysqldump not found or not installed. Exiting"
+    exit
+  end
+
+end
 
 def check_settings
   if !ENV['DB_USERNAME']
@@ -203,6 +245,7 @@ def compress_file(file_name)
   command = " nice -n #{@nice} lzma -#{@lzma_compress_rate} -z #{file_name}"
   puts "EXECUTING:\n  #{command}"
   if system(command)
+    #FileUtils.rm_rf(filename) if File.exists?(filename)
     return file_name+".lzma"
   else
     return nil
@@ -212,10 +255,10 @@ end
 def encrypt_file(file_name)
   # Openssl encryption using Bluefish-CBC with Salt.
   command = " nice -n #{@nice} openssl enc -bf-cbc -salt -in #{file_name} -out #{file_name}.enc -pass pass:#{@rsa_password}"
+  # To decrypt: 
+  # openssl enc -d -bf-cbc -in database_20090328__010010.sql.lzma > database_20090328__010010.sql.lzma 
   puts "EXECUTING:\n  #{command}"
   system(command)
-  # Delete original file 
-  # FileUtils.rm_rf(file_name)
   if system(command)
     # If deleted original file 
     FileUtils.rm_rf(file_name)
@@ -348,9 +391,9 @@ def send_data
   end
 
   puts @lines
-  puts "Files Copied: #{@files_count}"
-  puts "Data Transfered: #{to_file_size(@data_transferred)}"
-  puts "done!"
+  msg = "Finished transfer FilesCopied=#{@files_count} Transfered=#{to_file_size(@data_transferred)}"
+  puts "#{msg}"
+  to_syslog(@syslog_tag,msg)
 end
 
 
@@ -360,9 +403,10 @@ end
 
 ## Execution Start here ##
 def main_program
-  
+
+  check_programs
   check_directories
-  
+
   ### START MYSQL DUMP ###
   puts @lines
   puts "Starting MYSQL Dump \n"
@@ -393,6 +437,10 @@ def main_program
   puts @lines
   puts "#{@time} -- DONE"
   puts @lines
+
+  file = File.open(@log_file,"a")
+  file.puts(Time.now)
+  file.close
 
 end
 

@@ -7,22 +7,23 @@
 # Using mysqlhotcopy can result in faster backups depending on the copy speed of the O/S 
 #  and the size of the database being backed up.
 
-if [ -f "/DISKFULL" ]
-then
-  echo "Disk if full. Aborting Backup"
-  exit 1
-fi
-
-DATABASE="database_name"
 WEEK_DAY=`date "+%w"`
 BACKUP_FOLDER="/backup/local/mysql/hotcopy"
-DESTINATION_FOLDER="${BACKUP_FOLDER}/${DATABASE}/${WEEK_DAY}/"
-LOGFILE="${BACKUP_FOLDER}/${DATABASE}/backup.log"
+DB_USERNAME="root"
+DB_PASSWORD=""
+MYSQLHOTCOPY="/usr/bin/mysqlhotcopy --addtodest --user=${DB_USERNAME} "
 
-if [ ! -d "${DESTINATION_FOLDER}" ]; then
-	mkdir -p "${DESTINATION_FOLDER}"
-fi
+DATABASES=`ls -l /var/lib/mysql/ | grep ^d | awk {'print $8'}`
 
-echo `date` >> $LOGFILE
-echo "Starting to hotbackup of ${DATABASE} database to ${DESTINATION_FOLDER}" #>> $LOGFILE
-/usr/bin/mysqlhotcopy --addtodest $DATABASE $DESTINATION_FOLDER #>> $LOGFILE
+for DATABASE in $DATABASES 
+do
+    DESTINATION_FOLDER="${BACKUP_FOLDER}/${DATABASE}/${WEEK_DAY}/"
+    LOGFILE="${BACKUP_FOLDER}/${DATABASE}/backup.log"
+
+    if [ ! -d "${DESTINATION_FOLDER}" ]; then
+            mkdir -p "${DESTINATION_FOLDER}"
+    fi
+    echo `date` >> $LOGFILE
+    echo "Starting to hotbackup of ${DATABASE} database to ${DESTINATION_FOLDER}" >> $LOGFILE
+    $MYSQLHOTCOPY --debug --flushlog $DATABASE $DESTINATION_FOLDER >> $LOGFILE
+done

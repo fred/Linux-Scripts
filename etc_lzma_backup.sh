@@ -9,7 +9,7 @@ fi
 NICE="18"
 
 # Backup Dest directory, change this if you have someother location
-DEST="/backup/local"
+DEST="/backup"
  
 # Main directory where backup will be stored
 MBD="$DEST/etc/compressed_weekly/"

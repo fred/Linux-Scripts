@@ -64,16 +64,9 @@ require 'syslog'
 # Array of databases to backup 
 @databases = [
   {:name => "mysql", :dump_options => "", :append_name => ""},
-  #{:name => "fred_spree", :dump_options => "--single-transaction", :append_name => ""},
-  #{:name => "redmine", :dump_options => "--single-transaction", :append_name => ""},
-  #{:name => "serenity_spree", :dump_options => "--single-transaction", :append_name => ""},
-  #{:name => "mingood_production", :dump_options => "--single-transaction", :append_name => ""},
-  #{:name => "redmine", :dump_options => "--single-transaction", :append_name => ""},
-  #{:name => "feedscollect", :dump_options => "--single-transaction", :append_name => ""},
-  #{:name => "casablanca", :dump_options => "--single-transaction", :append_name => ""},
-  {:name => "iglesia", :dump_options => "--single-transaction", :append_name => ""},
-  {:name => "bangkok_properties_production", :dump_options => "--single-transaction", :append_name => ""},
-  {:name => "realestate_production", :dump_options => "", :append_name => ""}
+  {:name => "db1", :dump_options => "--single-transaction", :append_name => ""},
+  {:name => "db2", :dump_options => "--single-transaction", :append_name => ""},
+  {:name => "db3", :dump_options => "", :append_name => ""}
 ]
 
 # Also make a single backup of all databases. 

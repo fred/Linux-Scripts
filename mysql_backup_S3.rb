@@ -31,9 +31,16 @@ require 'syslog'
 @access_key_id = "xxxxxxxxxxxxxxxxxxxx"
 @secret_access_key = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 @bucket_name = "mybucket"
-@home = "/backup/local"
+
+# Set this if your bucket is not on default us-east zone
+@aws_host = "s3-ap-northeast-1.amazonaws.com"
+
+# Backup folder
+@home = "/home/deploy/backup"
 
 @time = Time.now
+
+# Syslog tag, for /var/log/syslog
 @syslog_tag = "mysql_backup_S3"
 
 # nice value: -19 to 19
@@ -41,8 +48,9 @@ require 'syslog'
 @nice = 18
 
 # lzma compression rates: 1-2 (fast) 3-9 (slow)
-# default 7, 2=10 second, 3=50 seconds
-@lzma_compress_rate = 4
+# default is 7
+# for EC2 use 2
+@lzma_compress_rate = 2
 
 @hostname = `hostname`.chomp
 
@@ -297,6 +305,9 @@ def stablish_connection
       :access_key_id     => @access_key_id,
       :secret_access_key => @secret_access_key
     )
+    if @aws_host
+      AWS::S3::DEFAULT_HOST.replace @aws_host
+    end
   rescue => exception
     puts @lines
     puts "There was an error: "
